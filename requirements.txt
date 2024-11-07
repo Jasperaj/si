@@ -43,3 +43,4 @@ watchdog==5.0.3
 streamlit_option_menu
 xlsxwriter
 bs4
+camelot
