@@ -4,7 +4,7 @@ import pandas as pd
 import os
 
 # Set the path for the Excel file
-excel_path = r"D:\OneDrive - Curves colors\Desktop\steamlit_app\data\si-master-sheet-8182.xlsx"
+excel_path = r"..\si-master-sheet-8182.xlsx"
 
 # Try to load the sheets
 try:
