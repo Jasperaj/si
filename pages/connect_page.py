@@ -4,14 +4,16 @@ import requests
 import json
 import pandas as pd
 import streamlit as st
+from io import BytesIO
 from streamlit_option_menu import option_menu
 
-
+# Bank details
 bank_details = {
     "HBL": ["0701", st.secrets["od"]],
     "MBL": ["1501", st.secrets["m_tg"]]
 }
 
+# Function to get OTP code
 def get_code():
     secret = {
         'Name': '{}@'.format(st.secrets["cips_username"]),
@@ -22,6 +24,7 @@ def get_code():
     otp = pyotp.TOTP(secret['Secret'])
     return otp.now()
 
+# Function to handle the first login step
 def login_to_api():
     url = 'https://apicpay.connectips.com/login/temp'
     headers = {
@@ -34,7 +37,6 @@ def login_to_api():
         'password': st.secrets["cips_password"],
         'corporateCode': st.secrets["cips_code"]
     }
-
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
         return response.json()
@@ -42,9 +44,9 @@ def login_to_api():
         st.error(f"Initial login failed with status code {response.status_code}: {response.text}")
         return None
 
+# Function to handle the second login step
 def second_login():
     login_response = login_to_api()
-
     if not login_response:
         return None
 
@@ -71,13 +73,13 @@ def second_login():
         st.error(f"Second login step failed with status code {response.status_code}: {response.text}")
         return None
 
+# Function for bank login
 def bank_login(bank_code, access_token):
     headers = {
         'Accept': 'application/json, text/plain, */*',
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json'
     }
-
     json_data = {
         'bankCode': bank_code,
         'corporateCode': st.secrets["cips_code"],
@@ -92,6 +94,7 @@ def bank_login(bank_code, access_token):
         st.error(f"Bank login failed with status code {response.status_code}: {response.text}")
         return None
 
+# Function to check bank balance
 def check_balance(bank_code, bank_acc_no, access_token):
     headers = {
         'Accept': 'application/json, text/plain, */*',
@@ -110,6 +113,7 @@ def check_balance(bank_code, bank_acc_no, access_token):
         st.error(f"Balance check failed with status code {response.status_code}: {response.text}")
         return None
 
+# Function to get pending approvals
 def pending_approval(bank_code, access_token, from_date, to_date):
     headers = {
         'Accept': 'application/json, text/plain, */*',
@@ -128,43 +132,32 @@ def pending_approval(bank_code, access_token, from_date, to_date):
                 'bankCode': bank_code,
                 'fromDate': from_date.strftime("%Y-%m-%d"),
                 'toDate': to_date.strftime("%Y-%m-%d"),
-                'batchId': '',
-                'transactionId': '',
-                'refrenceId': '',
-                'debtorAccountNumber': '',
-                'creditorAccountNumber': '',
-                'creditorBankCode': '',
-                'service': '',
-                'amountFrom': '',
-                'amountTo': '',
-                'debitStatus': '',
-                'creditStatus': '',
                 'serviceType': service_type,
             }
 
             response = requests.post(url, headers=headers, json=json_data)
-            response_json = response.json()
-            
-            if 'responseData' in response_json and response_json['responseData']:
-                transaction_id += response_json['responseData']
-                df_temp = pd.DataFrame(response_json['responseData'])
-                df = pd.concat([df, df_temp], ignore_index=True)
+            if response.status_code == 200:
+                response_json = response.json()
+                if 'responseData' in response_json and response_json['responseData']:
+                    transaction_id += response_json['responseData']
+                    df_temp = pd.DataFrame(response_json['responseData'])
+                    df = pd.concat([df, df_temp], ignore_index=True)
 
     df_detail = pd.DataFrame(columns=['batchDetailId', 'Transfer Bank', 'Transfer Party', 'Transfer Account No'])
 
     for x in transaction_id:
         detail_url = f'https://apicpay.connectips.com/cips/transactions/{x["batchDetailId"]}'
         final = requests.get(detail_url, headers=headers)
-        final_json = final.json().get('responseData', [])
-        
-        if final_json:
-            final_json = final_json[0]
-            batchid = x['batchDetailId']
-            transfer_bank = final_json['creditorBankName']
-            transfer_party = final_json['creditorAccountName']
-            transfer_acc = final_json['creditorAccountNumber']
-            new_row = pd.DataFrame([[batchid, transfer_bank, transfer_party, transfer_acc]], columns=df_detail.columns)
-            df_detail = pd.concat([df_detail, new_row], ignore_index=True).drop_duplicates()
+        if final.status_code == 200:
+            final_json = final.json().get('responseData', [])
+            if final_json:
+                final_json = final_json[0]
+                batchid = x['batchDetailId']
+                transfer_bank = final_json['creditorBankName']
+                transfer_party = final_json['creditorAccountName']
+                transfer_acc = final_json['creditorAccountNumber']
+                new_row = pd.DataFrame([[batchid, transfer_bank, transfer_party, transfer_acc]], columns=df_detail.columns)
+                df_detail = pd.concat([df_detail, new_row], ignore_index=True).drop_duplicates()
 
     if not df.empty and not df_detail.empty:
         try:
@@ -180,7 +173,7 @@ def pending_approval(bank_code, access_token, from_date, to_date):
 
     return df[columns] if not df.empty else pd.DataFrame(columns=columns), df_detail
 
-
+# Function to approve transactions
 def approve(transaction_id, bank_code, access_token):
     headers = {
         'Accept': 'application/json, text/plain, */*',
@@ -190,69 +183,28 @@ def approve(transaction_id, bank_code, access_token):
 
     json_data = {
         'bankCode': bank_code,
-        'cipsWaitingTransactionDetailIds': [
-            transaction_id,
-        ],
-        'cipsWaitingTransactionDetailId': None,
+        'cipsWaitingTransactionDetailIds': [transaction_id],
         'otpCode': get_code(),
     }
-    try:
 
+    try:
         response = requests.post('https://apicpay.connectips.com/cips/transaction/approve', headers=headers, json=json_data)
-        
     except:
         response = requests.post('https://apicpay.connectips.com/ips/transaction/approve', headers=headers, json=json_data)
+
     if response.status_code == 200:
         response_data = response.json()
-        result = response_data['responseStatus']
-        remark = response_data['responseMessage']
-        return result, remark
+        return response_data.get('responseStatus'), response_data.get('responseMessage')
     else:
         st.error(f"Approval failed with status code {response.status_code}: {response.text}")
         return None, None
 
-def approve_all(df, bank_code, access_token):
-    results = []
-    for x in df['cipsWaitingTransactionDetailId']:
-        result, remark = approve(x, bank_code, access_token)
-        results.append((x, result, remark))
-    return results
-
-def get_details(bank_code, access_token, from_date, to_date):
-    headers = {
-        'Accept': 'application/json, text/plain, */*',
-        'Authorization': f'Bearer {access_token}',
-        'Content-Type': 'application/json'
-    }
-    
-    json_data = {
-        'fromDate': from_date.strftime("%Y-%m-%d"),
-        'toDate': to_date.strftime("%Y-%m-%d"),
-        'bankCode': bank_code,
-        'debtorAccountNumber': '',
-        'creditorAccountNumber': '',
-        'channelCode': 'CIPS',
-        'pageable': {
-            'currentPage': 1,
-            'rowPerPage': 100,
-            'totalItem': None,
-        },
-    }
-
-    response = requests.post('https://apicpay.connectips.com/report/txn', headers=headers, json=json_data)
-    response_json = response.json()
-    details = response_json['responseData']['reports']
-    df = pd.DataFrame(details)
-    return df, df[['transactionDate', 'transactionDetailId', 'batchAmount', 'txnRemarks', 'creditReasonDesc', 'batchId', 'transactionAmount']]
-
-
-
-# Add this function to save generated file content to session state
+# Function to save file content to session state
 def save_file_to_session_state(key, content):
     if key not in st.session_state:
         st.session_state[key] = content
 
-# Update the download functions to store data in the session state
+# Function to download advice PDF
 def download_advice_pdf(detailid, filename, access_token):
     headers = {
         'Accept': 'application/json, text/plain, */*',
@@ -266,12 +218,11 @@ def download_advice_pdf(detailid, filename, access_token):
     }
 
     response = requests.post('https://apicpay.connectips.com/report/download/advice', headers=headers, json=json_data)
-
     if response.status_code == 200:
-        # Save the PDF content to session state
+        # Save PDF content to session state
         save_file_to_session_state(f'{filename}_content', response.content)
 
-        # Provide a Streamlit download button using the saved content
+        # Provide download button for individual file
         st.download_button(
             label=f"Download {filename}.pdf",
             data=st.session_state[f'{filename}_content'],
@@ -281,7 +232,7 @@ def download_advice_pdf(detailid, filename, access_token):
     else:
         st.error(f"Failed to download advice PDF for {detailid}. Status code: {response.status_code}")
 
-# Ensure download buttons are always visible in the session state
+# Function to display download buttons for existing files
 def display_download_buttons(details_df):
     for idx, row in details_df.iterrows():
         detailid = row['transactionDetailId']
@@ -296,10 +247,11 @@ def display_download_buttons(details_df):
                 mime='application/pdf'
             )
 
+# Define the ConnectIPS page
 def connectips_page():
     st.title("Bank Balance Checker")
 
-    # Ensure session state keys are initialized
+    # Initialize session state keys
     if 'access_token' not in st.session_state:
         st.session_state['access_token'] = None
     if 'logged_in' not in st.session_state:
@@ -311,7 +263,7 @@ def connectips_page():
     if 'details_fetched' not in st.session_state:
         st.session_state['details_fetched'] = False
 
-    # Main login and operations logic
+    # Login to ConnectIPS
     if st.button("Login ConnectIPS"):
         st.write("Logging in to API...")
         access_token = second_login()
@@ -322,6 +274,7 @@ def connectips_page():
         else:
             st.error("Login failed. Please check your credentials.")
 
+    # Ensure user is logged in
     if st.session_state['logged_in']:
         bank_name = st.selectbox("Select Bank", options=list(bank_details.keys()))
         if bank_name:
@@ -330,6 +283,7 @@ def connectips_page():
         from_date = st.date_input("From Date", value=(datetime.now() - timedelta(days=3)))
         to_date = st.date_input("To Date", value=datetime.now())
 
+        # Check balance and fetch pending approvals
         if st.button("Get Bank Balance"):
             access_token = st.session_state['access_token']
             st.write("Logging in to Bank...")
@@ -366,6 +320,7 @@ def connectips_page():
                     result, remark = approve(transaction_id, bank_code, st.session_state['access_token'])
                     st.write(f"Transaction ID {transaction_id} - Result: {result}, Remark: {remark}")
 
+        # Fetch and display details of approved payments
         if st.session_state['bank_balance_fetched']:
             if st.button("Get Details"):
                 access_token = st.session_state['access_token']
@@ -381,6 +336,13 @@ def connectips_page():
 
         if st.session_state['details_fetched']:
             details_df = st.session_state.get('details_df', pd.DataFrame())
+            selected_detail_rows = st.multiselect("Select details to download", details_df.index)
+            if st.button("Download Selected Details"):
+                for idx in selected_detail_rows:
+                    detailid = details_df.loc[idx, 'transactionDetailId']
+                    filename = f"Connectips_report_{detailid}"
+                    download_advice_pdf(detailid, filename, st.session_state['access_token'])
+
             if st.button("Download All Details"):
                 for idx, row in details_df.iterrows():
                     detailid = row['transactionDetailId']
@@ -390,6 +352,7 @@ def connectips_page():
             # Display download buttons for already downloaded files
             display_download_buttons(details_df)
 
+# Main function to run the app
 def connectips_main():
     if 'logged_in' not in st.session_state or not st.session_state.logged_in:
         st.error("You must be logged in to view this page.")
