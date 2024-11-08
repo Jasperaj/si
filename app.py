@@ -80,6 +80,7 @@ def main_page():
     elif page == "Fonepay":
         fonepay_main()        
     elif page == "Jazeera Login":
+        pass
         #jazeera_main()
     elif page == "Other Pages":
         st.title("Other Pages")
