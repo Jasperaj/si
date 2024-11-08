@@ -8,14 +8,14 @@ from streamlit_option_menu import option_menu
 
 
 bank_details = {
-    "HBL": ["0701", "20157288170088"],
-    "MBL": ["1501", "0400990684100012"]
+    "HBL": ["0701", st.secrets["od"]],
+    "MBL": ["1501", st.secrets["m_tg"]]
 }
 
 def get_code():
     secret = {
-        'Name': 'Upaj11279@',
-        'Secret': 'IY5MM4UZXA4BBKEPYJ727CYTQL3Z32AA',
+        'Name': f'{}@'.format(st.secrets['cips_username'],
+        'Secret': st.secrets['cips_secret'],
         'Issuer': 'corproatePAY',
         'Type': 'totp'
     }
@@ -30,9 +30,9 @@ def login_to_api():
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
     }
     data = {
-        'username': 'Upaj11279',
-        'password': 'CFO@sits2024',
-        'corporateCode': 'SITS11277'
+        'username': st.secrets["cips_username"],
+        'password': st.secrets["cips_password"],
+        'corporateCode': st.secrets["cips_code"]
     }
 
     response = requests.post(url, headers=headers, json=data)
@@ -56,9 +56,9 @@ def second_login():
     }
 
     data = {
-        'username': 'Upaj11279',
-        'password': 'CFO@sits2024',
-        'corporateCode': 'SITS11277',
+        'username': st.secrets["cips_username"],
+        'password': st.secrets["cips_password"],
+        'corporateCode': st.secrets["cips_code"],
         'qrCode': get_code(),
         'grant_type': 'password',
     }
@@ -80,9 +80,9 @@ def bank_login(bank_code, access_token):
 
     json_data = {
         'bankCode': bank_code,
-        'corporateCode': 'SITS11277',
-        'username': 'Upaj11279',
-        'password': 'Finance#15',
+        'corporateCode': st.secrets["cips_code"],
+        'username': st.secrets["cips_username"],
+        'password': st.secrets["cips_bankpassword"],
     }
 
     response = requests.post('https://apicpay.connectips.com/login/bank', headers=headers, json=json_data)
