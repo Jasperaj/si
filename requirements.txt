@@ -47,3 +47,4 @@ bs4
 camelot
 git+https://github.com/basic-bgnr/NepseUnofficialApi.git
 todoist-api-python==2.1.7
+plotly
