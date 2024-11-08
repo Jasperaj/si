@@ -102,7 +102,7 @@ def main():
                 {'selector': 'th', 'props': [('text-align', 'center'), ('background-color', '#e6f2ff')]},
                 {'selector': 'td', 'props': [('text-align', 'center')]}
             ])
-            .hide_index()
+            .hide(axis="index")
             .to_html(),
             unsafe_allow_html=True
         )
@@ -125,7 +125,7 @@ def main():
                     {'selector': 'th', 'props': [('text-align', 'center'), ('background-color', '#e6f2ff')]},
                     {'selector': 'td', 'props': [('text-align', 'center')]}
                 ])
-                .hide_index()
+                .hide(axis="index")
                 .to_html())
 
     # Define a function to fetch and display the top gainers and top losers
