@@ -22,14 +22,14 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36'}
 
     r = c.post(
-        '{st.secrets['ird']}/Handlers/E-SystemServices/Taxpayer/TaxPayerValidLoginHandler.ashx',
+        '{st.secrets["ird"]}/Handlers/E-SystemServices/Taxpayer/TaxPayerValidLoginHandler.ashx',
         data={'pan': pan, 'TPName': username, 'TPPassword': password, 'formToken': 'a', 'pIP': '45.123.221.48'},
         headers=header)
 
     def vat():
         try:
             table_data = (bs(c.get(
-                '{st.secrets['ird']}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList').text,
+                '{st.secrets["ird"]}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList').text,
                              'lxml'))
             time.sleep(10)
             datas = table_data.find_all('p')
@@ -45,7 +45,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
 
     def it():
         try:
-            url = '{st.secrets['ird']}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'
+            url = '{st.secrets["ird"]}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'
             table_data = bs(c.post(url, headers=header, data={
                 'start': '',
                 'limit': '',
@@ -71,7 +71,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
     def tds():
         try:
             table_data = bs(c.get(
-                '{st.secrets['ird']}/Handlers/TDS/GetTransactionHandler.ashx?method=GetWithholderRecs&_dc={}&objWith=%7B%22WhPan%22%3A%22{}%22%2C%22FromDate%22%3A%22{}%22%2C%22ToDate%22%3A%22{}%22%7D&page=1&start=0&limit=25'.format(
+                '{st.secrets["ird"]}/Handlers/TDS/GetTransactionHandler.ashx?method=GetWithholderRecs&_dc={}&objWith=%7B%22WhPan%22%3A%22{}%22%2C%22FromDate%22%3A%22{}%22%2C%22ToDate%22%3A%22{}%22%7D&page=1&start=0&limit=25'.format(
                     token, pan, fromdate, todate)).text, 'lxml')
             time.sleep(10)
             datas = table_data.find_all('p')
@@ -87,7 +87,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
 
     def annex10():
         try:
-            url = '{st.secrets['ird']}/Handlers/RAS/PanCollectionHandler.ashx?method=GetPanAnnex10Vouchers&_dc={}&Voucher=%7B%22Pan%22%3A%22{}%22%2C%22Fy%22%3A%2220{}%22%7D&formToken=a&page=1&start=0&limit=25'.format(
+            url = '{st.secrets["ird"]}/Handlers/RAS/PanCollectionHandler.ashx?method=GetPanAnnex10Vouchers&_dc={}&Voucher=%7B%22Pan%22%3A%22{}%22%2C%22Fy%22%3A%2220{}%22%7D&formToken=a&page=1&start=0&limit=25'.format(
                 token, pan, fiscal_year)
             table_data = bs(c.get(url).text, 'lxml')
             time.sleep(10)
