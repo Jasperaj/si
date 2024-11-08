@@ -46,4 +46,4 @@ xlsxwriter
 bs4
 camelot
 git+https://github.com/basic-bgnr/NepseUnofficialApi.git
-todoist-api-python==2.1.7s
+todoist-api-python==2.1.7
