@@ -6,7 +6,7 @@ from pages.NEA import nea_main
 from pages.vatreturn import vat_main
 from pages.IRD_Download import ird_main
 from pages.bank_reco import bank_main
-from pages.jazeera_login import jazeera_main
+#from pages.jazeera_login import jazeera_main
 from pages.fonepay_app import fonepay_main
 
 # Placeholder for user credentials
@@ -80,7 +80,7 @@ def main_page():
     elif page == "Fonepay":
         fonepay_main()        
     elif page == "Jazeera Login":
-        jazeera_main()
+        #jazeera_main()
     elif page == "Other Pages":
         st.title("Other Pages")
         st.write("Welcome to Other Pages!")
