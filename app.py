@@ -1,3 +1,21 @@
+import streamlit as st
+from pages.connectips_page import connectips_main
+from pages.M import MBL_main
+from pages.H import HBL_main
+from pages.wlink import wlink_main
+from pages.NEA import nea_main
+from pages.vatreturn import vat_main
+from pages.I import ird_main
+from pages.bank_reco import bank_main
+#from pages.jazeera_login import jazeera_main
+from pages.fonepay_app import fonepay_main
+
+# Placeholder for user credentials
+USER_CREDENTIALS = {
+    st.secrets["USERNAME"]: st.secrets["PASSWORD"],  # Replace with actual username and password
+}
+
+
 def login():
     st.title("Login")
     
