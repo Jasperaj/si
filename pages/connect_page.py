@@ -14,7 +14,7 @@ bank_details = {
 
 def get_code():
     secret = {
-        'Name': f'{}@'.format(st.secrets['cips_username'],
+        'Name': f'{}@'.format(st.secrets['cips_username']),
         'Secret': st.secrets['cips_secret'],
         'Issuer': 'corproatePAY',
         'Type': 'totp'
