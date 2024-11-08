@@ -31,7 +31,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
     def vat():
         try:
             table_data = (bs(c.get(
-                '{}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList'.format(st.secrets["ird"]).text,
+                '{}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList'.format(st.secrets["ird"])).text,
                              'lxml'))
             time.sleep(10)
             datas = table_data.find_all('p')
