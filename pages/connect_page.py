@@ -226,6 +226,7 @@ def get_details(bank_code, access_token, from_date, to_date):
         response_json = response.json()
         details = response_json['responseData']['reports']
         df = pd.DataFrame(details)
+        st.session_state['details_df'] = df  # Persist data in session state
         return df, df[['transactionDate', 'transactionDetailId', 'batchAmount', 'txnRemarks', 'creditReasonDesc', 'batchId', 'transactionAmount']]
     else:
         st.error(f"Details fetch failed with status code {response.status_code}: {response.text}")
@@ -359,9 +360,12 @@ def connectips_page():
                 else:
                     st.write("No approved payment details found.")
 
-        if st.session_state['details_fetched']:
-            details_df = st.session_state.get('details_df', pd.DataFrame())
-            selected_detail_rows = st.multiselect("Select details to download", details_df.index)
+        if 'details_df' in st.session_state:
+            details_df = st.session_state['details_df']
+            st.write("Approved Payments Details (Persistent):")
+            st.dataframe(details_df)
+
+            selected_detail_rows = st.multiselect("Select details to download", details_df.index, key="details_select")
             if st.button("Download Selected Details"):
                 for idx in selected_detail_rows:
                     detailid = details_df.loc[idx, 'transactionDetailId']
