@@ -31,7 +31,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
     def vat():
         try:
             table_data = (bs(c.get(
-                '{st.secrets["ird"]}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList').text,
+                '{}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList'.format(st.secrets["ird"]).text,
                              'lxml'))
             time.sleep(10)
             datas = table_data.find_all('p')
@@ -47,7 +47,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
 
     def it():
         try:
-            url = '{st.secrets["ird"]}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'
+            url = '{}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'.format(st.secrets["ird"]
             table_data = bs(c.post(url, headers=header, data={
                 'start': '',
                 'limit': '',
@@ -73,8 +73,8 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
     def tds():
         try:
             table_data = bs(c.get(
-                '{st.secrets["ird"]}/Handlers/TDS/GetTransactionHandler.ashx?method=GetWithholderRecs&_dc={}&objWith=%7B%22WhPan%22%3A%22{}%22%2C%22FromDate%22%3A%22{}%22%2C%22ToDate%22%3A%22{}%22%7D&page=1&start=0&limit=25'.format(
-                    token, pan, fromdate, todate)).text, 'lxml')
+                '{}/Handlers/TDS/GetTransactionHandler.ashx?method=GetWithholderRecs&_dc={}&objWith=%7B%22WhPan%22%3A%22{}%22%2C%22FromDate%22%3A%22{}%22%2C%22ToDate%22%3A%22{}%22%7D&page=1&start=0&limit=25'.format(
+                    st.secrets["ird"],token, pan, fromdate, todate)).text, 'lxml')
             time.sleep(10)
             datas = table_data.find_all('p')
             d = datas[0].text
@@ -89,8 +89,8 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
 
     def annex10():
         try:
-            url = '{st.secrets["ird"]}/Handlers/RAS/PanCollectionHandler.ashx?method=GetPanAnnex10Vouchers&_dc={}&Voucher=%7B%22Pan%22%3A%22{}%22%2C%22Fy%22%3A%2220{}%22%7D&formToken=a&page=1&start=0&limit=25'.format(
-                token, pan, fiscal_year)
+            url = '{}/Handlers/RAS/PanCollectionHandler.ashx?method=GetPanAnnex10Vouchers&_dc={}&Voucher=%7B%22Pan%22%3A%22{}%22%2C%22Fy%22%3A%2220{}%22%7D&formToken=a&page=1&start=0&limit=25'.format(
+                st.secrets["ird"],token, pan, fiscal_year)
             table_data = bs(c.get(url).text, 'lxml')
             time.sleep(10)
             datas = table_data.find_all('p')
