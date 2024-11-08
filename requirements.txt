@@ -24,6 +24,7 @@ pyarrow==18.0.0
 pydeck==0.9.1
 Pygments==2.18.0
 pyotp==2.9.0
+lxml
 python-dateutil==2.9.0.post0
 pytz==2024.2
 referencing==0.35.1
