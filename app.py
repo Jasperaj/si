@@ -38,7 +38,8 @@ def dashboard_page():
     
     with col1:
         st.subheader("Jazeera Balance Status")
-        jazeera_main()  # Call the Jazeera Login script for its output
+        #jazeera_main()  # Call the Jazeera Login script for its output
+        pass
 
         st.subheader("W-Link Internet Status")
         wlink_main()  # Call the W-Link script for its output
