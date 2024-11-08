@@ -11,7 +11,7 @@ from pages.fonepay_app import fonepay_main
 
 # Placeholder for user credentials
 USER_CREDENTIALS = {
-    'admin': 'password123',  # Replace with actual username and password
+    st.secrets["USERNAME"]: st.secrets["PASSWORD"],  # Replace with actual username and password
 }
 
 def login():
