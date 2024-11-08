@@ -20,8 +20,10 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
     try:
         token_data = bs(c.get(url).text, 'html.parser')
         token = token_data.find_all('script')[1]['src'].replace('app.js?_dc=', "")
+        st.write("Token obtained successfully.")
     except Exception as e:
         st.error(f"Error obtaining token: {e}")
+        st.write("Traceback details:", exc_info=True)
         return None, None
 
     header = {
@@ -35,76 +37,90 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
             headers=header
         )
         if r.status_code != 200:
-            st.error(f"Login request failed with status code {r.status_code}")
+            st.error(f"Login request failed with status code {r.status_code}. Response: {r.text}")
             return None, None
+        st.write("Login successful.")
     except Exception as e:
         st.error(f"Error during login: {e}")
+        st.write("Traceback details:", exc_info=True)
         return None, None
 
     def vat():
         try:
             with st.spinner('Fetching VAT data...'):
-                table_data = bs(c.get(f'{base_url}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList').text, 'lxml')
+                response = c.get(f'{base_url}/Handlers/VAT/VatReturnsHandler.ashx?method=GetVatReturnList')
+                response.raise_for_status()
+                table_data = bs(response.text, 'lxml')
                 time.sleep(5)
                 datas = table_data.find_all('p')
                 d = datas[0].text
                 match = re.search('root:(.*),message', d).group(1)
                 res = json.loads(match)
                 df_vat = pd.DataFrame(res)
+                st.write("VAT data fetched successfully.")
                 return df_vat
         except Exception as e:
             st.error(f"Error fetching VAT data: {e}")
+            st.write("Traceback details:", exc_info=True)
             return pd.DataFrame({"SubmissionNo": ["No Data"], "Taxyear": ["No Data"], "Period": ["No Data"]})
 
     def it():
         try:
             with st.spinner('Fetching IT data...'):
                 url = f'{base_url}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'
-                response = c.post(url, headers=header, data={
-                    'pan': pan,
-                    'formToken': 'a'
-                })
+                response = c.post(url, headers=header, data={'pan': pan, 'formToken': 'a'})
+                response.raise_for_status()
                 table_data = bs(response.text, 'lxml')
                 datas = table_data.find_all('p')
                 d = datas[0].text
                 match = re.search('root:(.*),message', d).group(1)
                 res = json.loads(match)
                 df_it = pd.DataFrame(res)
+                st.write("IT data fetched successfully.")
                 return df_it
         except Exception as e:
             st.error(f"Error fetching IT data: {e}")
+            st.write("Traceback details:", exc_info=True)
             return pd.DataFrame({'AssessmentNo': ["No Data"], 'FiscalYear': ["No Data"]})
 
     def tds():
         try:
             with st.spinner('Fetching TDS data...'):
                 url = f'{base_url}/Handlers/TDS/GetTransactionHandler.ashx?method=GetWithholderRecs&_dc={token}&objWith=%7B%22WhPan%22%3A%22{pan}%22%2C%22FromDate%22%3A%22{fromdate}%22%2C%22ToDate%22%3A%22{todate}%22%7D&page=1&start=0&limit=25'
-                table_data = bs(c.get(url).text, 'lxml')
+                response = c.get(url)
+                response.raise_for_status()
+                table_data = bs(response.text, 'lxml')
                 time.sleep(5)
                 datas = table_data.find_all('p')
                 d = datas[0].text
                 match = re.search('root:(.*),message', d).group(1)
                 res = json.loads(match)
                 df_tds = pd.DataFrame(res)
+                st.write("TDS data fetched successfully.")
                 return df_tds
         except Exception as e:
             st.error(f"Error fetching TDS data: {e}")
+            st.write("Traceback details:", exc_info=True)
             return pd.DataFrame({'TranNo': ['No ETDS Details Obtained']})
 
     def annex10():
         try:
             with st.spinner('Fetching Annex 10 data...'):
                 url = f'{base_url}/Handlers/RAS/PanCollectionHandler.ashx?method=GetPanAnnex10Vouchers&_dc={token}&Voucher=%7B%22Pan%22%3A%22{pan}%22%2C%22Fy%22%3A%2220{fiscal_year}%22%7D&formToken=a&page=1&start=0&limit=25'
-                table_data = bs(c.get(url).text, 'lxml')
+                response = c.get(url)
+                response.raise_for_status()
+                table_data = bs(response.text, 'lxml')
                 time.sleep(5)
                 datas = table_data.find_all('p')
                 d = datas[0].text
                 match = re.search('root:(.*),message', d).group(1)
                 res = json.loads(match)
                 df_annex10 = pd.DataFrame(res)
+                st.write("Annex 10 data fetched successfully.")
                 return df_annex10
         except Exception as e:
             st.error(f"Error fetching Annex 10 data: {e}")
+            st.write("Traceback details:", exc_info=True)
             return pd.DataFrame({"Data": ['No Annex 10 TDS Receivable Details Obtained']})
 
     progress_text = "Operation in progress. Please wait..."
