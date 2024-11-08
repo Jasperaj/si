@@ -48,7 +48,7 @@ def hbl_login():
 
     json_data = {
         'username': st.secrets["h_username"],
-        'password': st.secrets["h_passowrd"],
+        'password': st.secrets["h_password"],
         'gRecaptchaResponse': '',
         'otp' : get_code()
     }
