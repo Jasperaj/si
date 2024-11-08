@@ -1,3 +1,252 @@
+import pyotp
+from datetime import datetime, timedelta
+import requests
+import json
+import pandas as pd
+import streamlit as st
+from streamlit_option_menu import option_menu
+
+
+bank_details = {
+    "HBL": ["0701", st.secrets["od"]],
+    "MBL": ["1501", st.secrets["m_tg"]]
+}
+
+def get_code():
+    secret = {
+        'Name': '{}@'.format(st.secrets["cips_username"]),
+        'Secret': st.secrets['cips_secret'],
+        'Issuer': 'corproatePAY',
+        'Type': 'totp'
+    }
+    otp = pyotp.TOTP(secret['Secret'])
+    return otp.now()
+
+def login_to_api():
+    url = 'https://apicpay.connectips.com/login/temp'
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+    }
+    data = {
+        'username': st.secrets["cips_username"],
+        'password': st.secrets["cips_password"],
+        'corporateCode': st.secrets["cips_code"]
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"Initial login failed with status code {response.status_code}: {response.text}")
+        return None
+
+def second_login():
+    login_response = login_to_api()
+
+    if not login_response:
+        return None
+
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': 'Basic MTIxMGRhZDRjbGllbnRpZDljYTE0bGl2ZTc1YjExOTE6MGFiZjNkZjBmMjRzZWNyZXQyMGZhZGQ0bGl2ZTkxYzA=',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+    }
+
+    data = {
+        'username': st.secrets["cips_username"],
+        'password': st.secrets["cips_password"],
+        'corporateCode': st.secrets["cips_code"],
+        'qrCode': get_code(),
+        'grant_type': 'password',
+    }
+
+    response = requests.post('https://apicpay.connectips.com/oauth/token', headers=headers, data=data)
+    if response.status_code == 200:
+        response_json = response.json()
+        return response_json['access_token']
+    else:
+        st.error(f"Second login step failed with status code {response.status_code}: {response.text}")
+        return None
+
+def bank_login(bank_code, access_token):
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+    json_data = {
+        'bankCode': bank_code,
+        'corporateCode': st.secrets["cips_code"],
+        'username': st.secrets["cips_username"],
+        'password': st.secrets["cips_bankpassword"],
+    }
+
+    response = requests.post('https://apicpay.connectips.com/login/bank', headers=headers, json=json_data)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"Bank login failed with status code {response.status_code}: {response.text}")
+        return None
+
+def check_balance(bank_code, bank_acc_no, access_token):
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': f'Bearer {access_token}'
+    }
+    json_data = {
+        'accountNumber': bank_acc_no,
+        'bankCode': bank_code,
+    }
+
+    response = requests.post('https://apicpay.connectips.com/banks/user/account/balance', headers=headers, json=json_data)
+    if response.status_code == 200:
+        response_json = response.json()
+        return response_json['responseData']['availableBalance']
+    else:
+        st.error(f"Balance check failed with status code {response.status_code}: {response.text}")
+        return None
+
+def pending_approval(bank_code, access_token, from_date, to_date):
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+    service_types = ['FUND_TRANSFER', 'BILL_PAYMENT']
+    urls = ['https://apicpay.connectips.com/cips/transaction/pendings', 'https://apicpay.connectips.com/ips/billpay/pendings']
+    df = pd.DataFrame()
+    transaction_id = []
+
+    for url in urls:
+        for service_type in service_types:
+            json_data = {
+                'bankCode': bank_code,
+                'fromDate': from_date.strftime("%Y-%m-%d"),
+                'toDate': to_date.strftime("%Y-%m-%d"),
+                'batchId': '',
+                'transactionId': '',
+                'refrenceId': '',
+                'debtorAccountNumber': '',
+                'creditorAccountNumber': '',
+                'creditorBankCode': '',
+                'service': '',
+                'amountFrom': '',
+                'amountTo': '',
+                'debitStatus': '',
+                'creditStatus': '',
+                'serviceType': service_type,
+            }
+
+            response = requests.post(url, headers=headers, json=json_data)
+            response_json = response.json()
+            
+            if 'responseData' in response_json and response_json['responseData']:
+                transaction_id += response_json['responseData']
+                df_temp = pd.DataFrame(response_json['responseData'])
+                df = pd.concat([df, df_temp], ignore_index=True)
+
+    df_detail = pd.DataFrame(columns=['batchDetailId', 'Transfer Bank', 'Transfer Party', 'Transfer Account No'])
+
+    for x in transaction_id:
+        detail_url = f'https://apicpay.connectips.com/cips/transactions/{x["batchDetailId"]}'
+        final = requests.get(detail_url, headers=headers)
+        final_json = final.json().get('responseData', [])
+        
+        if final_json:
+            final_json = final_json[0]
+            batchid = x['batchDetailId']
+            transfer_bank = final_json['creditorBankName']
+            transfer_party = final_json['creditorAccountName']
+            transfer_acc = final_json['creditorAccountNumber']
+            new_row = pd.DataFrame([[batchid, transfer_bank, transfer_party, transfer_acc]], columns=df_detail.columns)
+            df_detail = pd.concat([df_detail, new_row], ignore_index=True).drop_duplicates()
+
+    if not df.empty and not df_detail.empty:
+        try:
+            df = df.merge(df_detail, on='batchDetailId', how='left').drop_duplicates()
+        except Exception as e:
+            st.error(f"Error merging dataframes: {e}")
+
+    columns = [
+        'cipsWaitingTransactionDetailId', 'batchDetailId', 'batchId', 'serviceName', 'batchAmount',
+        'debtorAccountNumber', 'debtorAccountName', 'createdBy', 'createdAt', 'batchRemarks',
+        'Transfer Bank', 'Transfer Party', 'Transfer Account No'
+    ]
+
+    return df[columns] if not df.empty else pd.DataFrame(columns=columns), df_detail
+
+
+def approve(transaction_id, bank_code, access_token):
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+    json_data = {
+        'bankCode': bank_code,
+        'cipsWaitingTransactionDetailIds': [
+            transaction_id,
+        ],
+        'cipsWaitingTransactionDetailId': None,
+        'otpCode': get_code(),
+    }
+    try:
+
+        response = requests.post('https://apicpay.connectips.com/cips/transaction/approve', headers=headers, json=json_data)
+        
+    except:
+        response = requests.post('https://apicpay.connectips.com/ips/transaction/approve', headers=headers, json=json_data)
+    if response.status_code == 200:
+        response_data = response.json()
+        result = response_data['responseStatus']
+        remark = response_data['responseMessage']
+        return result, remark
+    else:
+        st.error(f"Approval failed with status code {response.status_code}: {response.text}")
+        return None, None
+
+def approve_all(df, bank_code, access_token):
+    results = []
+    for x in df['cipsWaitingTransactionDetailId']:
+        result, remark = approve(x, bank_code, access_token)
+        results.append((x, result, remark))
+    return results
+
+def get_details(bank_code, access_token, from_date, to_date):
+    headers = {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+    
+    json_data = {
+        'fromDate': from_date.strftime("%Y-%m-%d"),
+        'toDate': to_date.strftime("%Y-%m-%d"),
+        'bankCode': bank_code,
+        'debtorAccountNumber': '',
+        'creditorAccountNumber': '',
+        'channelCode': 'CIPS',
+        'pageable': {
+            'currentPage': 1,
+            'rowPerPage': 100,
+            'totalItem': None,
+        },
+    }
+
+    response = requests.post('https://apicpay.connectips.com/report/txn', headers=headers, json=json_data)
+    response_json = response.json()
+    details = response_json['responseData']['reports']
+    df = pd.DataFrame(details)
+    return df, df[['transactionDate', 'transactionDetailId', 'batchAmount', 'txnRemarks', 'creditReasonDesc', 'batchId', 'transactionAmount']]
+
+
+
 # Add this function to save generated file content to session state
 def save_file_to_session_state(key, content):
     if key not in st.session_state:
