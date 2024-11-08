@@ -9,13 +9,13 @@ from io import BytesIO
 import xlsxwriter
 
 
-bank_acc = {'od': '20157288170088', 'call': '20157288170064', 'usd48': '20157288170048', 'usd72': '20157288170072'}
+bank_acc = {'od': st.secrets["od"], 'call': st.secrets["call"], 'usd48': st.secrets["usd48"], 'usd72': st.secrets["usd72"]}
 
 
 def get_code():
     secret = {
-        'Name': 'H5728817',
-        'Secret': 'LFBE4M2WLBKVER22JJIESQZXIRLUCTKU',
+        'Name': st.secrets["h_username"],
+        'Secret': st.secrets["h_secret"],
         'Issuer': 'corproatePAY',
         'Type': 'totp'
     }
@@ -47,8 +47,8 @@ def hbl_login():
     }
 
     json_data = {
-        'username': 'H5728817',
-        'password': 'Attelica#546',
+        'username': st.secrets["h_username"],
+        'password': st.secrets["h_passowrd"],
         'gRecaptchaResponse': '',
         'otp' : get_code()
     }
