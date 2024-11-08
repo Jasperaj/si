@@ -45,4 +45,5 @@ streamlit_option_menu
 xlsxwriter
 bs4
 camelot
-git clone https://github.com/basic-bgnr/NepseUnofficialApi.git
+git install https://github.com/basic-bgnr/NepseUnofficialApi.git
+todoist-api-python==1.0.0
