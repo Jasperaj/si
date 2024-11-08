@@ -47,7 +47,7 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
 
     def it():
         try:
-            url = '{}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'.format(st.secrets["ird"]
+            url = '{}/Handlers/IncomeTax/D01/AssessmentSADoneHandler.ashx?method=GetListAssess'.format(st.secrets["ird"])
             table_data = bs(c.post(url, headers=header, data={
                 'start': '',
                 'limit': '',
