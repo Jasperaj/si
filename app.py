@@ -30,6 +30,35 @@ def login():
         else:
             st.error("Invalid username or password")
 
+
+def dashboard_page():
+    st.title("Dashboard")
+    st.write("This is a consolidated view of all applications.")
+
+    # Display each script’s output in a structured layout, e.g., columns
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Jazeera Balance Status")
+        #jazeera_main()  # Call the Jazeera Login script for its output
+        pass
+
+        st.subheader("W-Link Internet Status")
+        wlink_main()  # Call the W-Link script for its output
+
+    with col2:
+        st.subheader("MBL Bank Status")
+        MBL_main()  # Call the MBL script for its output
+
+        st.subheader("NEA and VAT Return Status")
+        nea_main()  # NEA script output
+        vat_main()  # VAT Return script output
+
+    # Add more sections or columns as needed
+    st.subheader("Fonepay Balance and Other Information")
+    fonepay_main()  # Call the Fonepay script for its output
+
+
 def main_page():
     if not st.session_state.get("logged_in"):
         st.error("You are not logged in. Please log in to access this page.")
