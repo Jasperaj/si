@@ -4,8 +4,6 @@ import pandas as pd
 import toml
 import plotly.express as px
 
-# Load secrets from your datastore.toml file
-st.secrets = toml.load("secrets.toml")
 
 def main():
     st.title("Meroshare Dashboard")
