@@ -1,5 +1,5 @@
 import streamlit as st
-from pages.connectips_page import connectips_main
+from pages.connect_page import connectips_main
 from pages.M import MBL_main
 from pages.H import HBL_main
 from pages.wlink import wlink_main
