@@ -8,7 +8,7 @@ from io import BytesIO
 import xlsxwriter
 
 
-bank_acc = {'j9': '0400990684100049', 'tg': '0400990684100012', 'tg usd': '0400990684100030', 'j9 usd': '0400990684100058'}
+bank_acc = {'j9': st.secrets["m_j9"], 'tg': st.secrets["m_tg"], 'tg usd': st.secrets["m_tgusd"], 'j9 usd': st.secrets["m_j9usd"]}
 
 def mbl_login():
     cookies = {
@@ -34,8 +34,8 @@ def mbl_login():
     }
 
     json_data = {
-        'username': 'C09906841',
-        'password': 'Soc#Wizz10',
+        'username': st.secrets["m_username"],
+        'password': st.secrets["m_password"],
         'gRecaptchaResponse': '',
     }
 
