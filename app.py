@@ -24,7 +24,7 @@ def login():
     if st.button("Login"):
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             st.session_state.logged_in = True
-            st.experimental_rerun()  # Force a rerun to update the UI
+            st.rerun()  # Force a rerun to update the UI
         else:
             st.error("Invalid username or password")
 
