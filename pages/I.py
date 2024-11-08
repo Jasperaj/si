@@ -139,6 +139,10 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
 
     zip_buffer.seek(0)
 
+    # Save buffers to session state
+    st.session_state['excel_buffer'] = excel_buffer
+    st.session_state['zip_buffer'] = zip_buffer
+
     return excel_buffer, zip_buffer
 
 def ird_detail_download_page():
@@ -158,25 +162,23 @@ def ird_detail_download_page():
                 output_name, pan, username, password, fromdate.strftime("%Y.%m.%d"), todate.strftime("%Y.%m.%d"), fiscal_year
             )
             if excel_buffer and zip_buffer:
-                st.session_state['excel_buffer'] = excel_buffer
-                st.session_state['zip_buffer'] = zip_buffer
                 st.success("Download Complete! You can download the files below.")
 
-                st.download_button(
-                    label="Download Excel file",
-                    data=st.session_state['excel_buffer'],
-                    file_name=f'{output_name}_{fiscal_year}.xlsx',
-                    mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
+    # Show download buttons if buffers are available in session state
+    if 'excel_buffer' in st.session_state and 'zip_buffer' in st.session_state:
+        st.download_button(
+            label="Download Excel file",
+            data=st.session_state['excel_buffer'],
+            file_name=f'{output_name}_{fiscal_year}.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
-                st.download_button(
-                    label="Download Zipped Documents",
-                    data=st.session_state['zip_buffer'],
-                    file_name=f'{output_name}.zip',
-                    mime='application/zip'
-                )
-        else:
-            st.error("Please provide all the required inputs")
+        st.download_button(
+            label="Download Zipped Documents",
+            data=st.session_state['zip_buffer'],
+            file_name=f'{output_name}.zip',
+            mime='application/zip'
+        )
 
 def ird_main():
     if 'logged_in' not in st.session_state or not st.session_state.logged_in:
