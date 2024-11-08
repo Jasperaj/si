@@ -249,11 +249,13 @@ def download_advice_pdf(detailid, filename, access_token):
         with open(f'{filename}.pdf', 'wb') as f:
             f.write(response.content)
         with open(f'{filename}.pdf', 'rb') as file:
+            # Use a unique key for each download button to keep them persistent
             st.download_button(
                 label=f"Download {filename}.pdf",
                 data=file,
                 file_name=f"{filename}.pdf",
-                mime='application/pdf'
+                mime='application/pdf',
+                key=f"download_{detailid}"
             )
     else:
         st.error(f"Advice PDF download failed with status code {response.status_code}: {response.text}")
