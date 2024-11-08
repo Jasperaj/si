@@ -13,7 +13,8 @@ def ird_detail_download(output_name, pan, username, password, fromdate, todate, 
     os.makedirs(output_name, exist_ok=True)
     current_path = os.getcwd() + '/' + output_name + '/'
 
-    url = '{st.secrets["ird"]}/taxpayer/app.html'
+    url = '{}/taxpayer/app.html'.format({st.secrets["ird"]})
+    print(url)
     c = requests.Session()
 
     token_data = bs(c.get(url).text, 'html.parser')
