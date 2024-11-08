@@ -1,7 +1,7 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 from pages.connectips_page import connectips_page
-from pages.MBL import MBL_page
+from pages.M import MBL_page
 
 def main():
     with st.sidebar:
